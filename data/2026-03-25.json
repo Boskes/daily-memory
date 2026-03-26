@@ -1,0 +1,49 @@
+{
+  "date": "2026-03-25",
+  "entries": [
+    {
+      "id": "2026-03-25-002",
+      "timestamp": "2026-03-25T11:13:59.066Z",
+      "title": "Optie 2 gebouwd — Control Center als OpenClaw tools",
+      "summary": "Skill aangemaakt zodat ik (Mike) alle Control Center APIs kan gebruiken vanuit gesprekken. Trend Tracker, Daily Memory, R&D Team en Autonome Medewerker zijn nu geïntegreerde tools.",
+      "project": "control-center",
+      "tags": [
+        "skill",
+        "integratie",
+        "openclaw"
+      ],
+      "details": [
+        "SKILL.md aangemaakt in workspace-main/skills/control-center/",
+        "API endpoints gedocumenteerd voor alle 8 apps",
+        "Tabel toegevoegd: wanneer welke API gebruiken",
+        "Ik log voortaan automatisch na elk gesprek naar Daily Memory",
+        "Trend Tracker data beschikbaar in gesprekken",
+        "R&D debat starten via chat mogelijk",
+        "Autonome Medewerker taken opvragen via chat"
+      ]
+    },
+    {
+      "id": "2026-03-25-001",
+      "timestamp": "2026-03-25T09:46:31.682Z",
+      "title": "Control Center v2 gebouwd — modulaire architectuur + GitHub setup",
+      "summary": "Volledige Control Center v2 opgebouwd als centrale hub voor alle projecten. Modulaire structuur met apps/ map voor zelfstandige apps en modules/ voor plugins binnen de hub. GarageOS ontdekt in andere workspace en toegevoegd. Poorten geherorganiseerd. Repo opgezet op GitHub (github.com/Boskes/mike-control-center) met correcte structuur.",
+      "project": "control-center",
+      "tags": [
+        "architecture",
+        "github",
+        "setup"
+      ],
+      "details": [
+        "Control Center v2 gebouwd op poort 3000 met modulaire server die plugins auto-laadt",
+        "apps/ structuur aangemaakt: activity-dashboard (:3001), garageos (:3002), youtube-transcript-tool (:3003)",
+        "GarageOS gevonden in C:/Users/jurge/.openclaw/workspace/garageos en geintegreerd",
+        "Express server + package.json aangemaakt voor GarageOS",
+        "Poorten meerdere keren gereorganiseerd op verzoek",
+        "GitHub repo aangemaakt: github.com/Boskes/mike-control-center",
+        "Merge conflict opgelost bij eerste push (GitHub had auto-README)",
+        "Rommelbestanden (AGENTS.md, SOUL.md etc.) verwijderd uit repo",
+        "Daily Memory System gebouwd op poort 3004 met dagelijkse logs, zoekfunctie en project-filtering"
+      ]
+    }
+  ]
+}

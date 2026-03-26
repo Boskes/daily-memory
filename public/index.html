@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Memory — Mike Control Center</title>
+  <style>
+    :root {
+      --bg:       #0d0f18;
+      --surface:  #161926;
+      --surface2: #1e2235;
+      --surface3: #252a42;
+      --border:   #2a2f4a;
+      --accent:   #7c6fff;
+      --accent2:  #00d4aa;
+      --danger:   #ff5572;
+      --warn:     #f59e0b;
+      --text:     #e8eaf6;
+      --muted:    #7b7f9e;
+      --radius:   12px;
+    }
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
+    ::-webkit-scrollbar { width:5px; } ::-webkit-scrollbar-track { background:transparent; } ::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+
+    /* ── Topbar ── */
+    .topbar { background:var(--surface); border-bottom:1px solid var(--border); padding:0 28px; height:60px; display:flex; align-items:center; gap:14px; flex-shrink:0; }
+    .topbar-logo { font-size:24px; }
+    .topbar-title { font-size:1.1rem; font-weight:700; }
+    .topbar-sub { font-size:.8rem; color:var(--muted); }
+    .topbar-spacer { flex:1; }
+    .btn { padding:9px 18px; border-radius:8px; border:none; cursor:pointer; font-size:.87rem; font-weight:600; transition:all .12s; }
+    .btn-primary { background:var(--accent); color:#fff; }
+    .btn-primary:hover { background:#6b5fef; }
+    .btn-secondary { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+    .btn-secondary:hover { border-color:var(--accent); color:var(--accent); }
+    .btn-danger { background:rgba(255,85,114,.15); color:var(--danger); border:1px solid rgba(255,85,114,.3); }
+    .btn-danger:hover { background:rgba(255,85,114,.25); }
+    .btn-sm { padding:5px 12px; font-size:.78rem; }
+
+    /* ── Layout ── */
+    .layout { display:flex; flex:1; overflow:hidden; height:calc(100vh - 60px); }
+
+    /* ── Sidebar ── */
+    .sidebar { width:260px; flex-shrink:0; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+    .sidebar-search { padding:14px 14px 10px; }
+    .search-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:9px 12px; color:var(--text); font-size:.85rem; outline:none; }
+    .search-input:focus { border-color:var(--accent); }
+    .search-input::placeholder { color:var(--muted); }
+
+    .sidebar-tabs { display:flex; padding:0 14px 10px; gap:6px; }
+    .tab-btn { flex:1; padding:6px; border-radius:7px; border:none; cursor:pointer; font-size:.75rem; font-weight:600; background:var(--surface2); color:var(--muted); transition:all .12s; }
+    .tab-btn.active { background:var(--accent); color:#fff; }
+
+    .day-list { overflow-y:auto; flex:1; padding:0 8px 12px; }
+    .day-item { padding:10px 12px; border-radius:9px; cursor:pointer; margin-bottom:3px; transition:all .12s; border:1px solid transparent; }
+    .day-item:hover { background:var(--surface2); }
+    .day-item.active { background:var(--surface2); border-color:var(--accent); }
+    .day-item-date { font-size:.85rem; font-weight:600; display:flex; align-items:center; justify-content:space-between; }
+    .day-item-count { font-size:.7rem; background:var(--surface3); border-radius:20px; padding:1px 8px; color:var(--muted); }
+    .day-item.active .day-item-count { background:var(--accent); color:#fff; }
+    .day-item-projects { font-size:.72rem; color:var(--muted); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .day-item-preview { font-size:.75rem; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    .sidebar-empty { text-align:center; padding:40px 16px; color:var(--muted); font-size:.85rem; }
+
+    /* ── Main ── */
+    .main { flex:1; overflow-y:auto; display:flex; flex-direction:column; }
+
+    /* Stats bar */
+    .stats-bar { display:flex; gap:12px; padding:20px 28px 0; flex-wrap:wrap; }
+    .stat-pill { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px 18px; display:flex; align-items:center; gap:10px; }
+    .stat-icon { font-size:1.2rem; }
+    .stat-num { font-size:1.3rem; font-weight:700; color:var(--accent); }
+    .stat-lbl { font-size:.72rem; color:var(--muted); }
+
+    /* Day view */
+    .day-view { flex:1; padding:24px 28px; }
+    .day-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+    .day-title { font-size:1.3rem; font-weight:700; }
+    .day-subtitle { font-size:.85rem; color:var(--muted); margin-top:3px; }
+
+    .entries-list { display:flex; flex-direction:column; gap:14px; }
+
+    .entry-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; transition:border-color .15s; }
+    .entry-card:hover { border-color:var(--accent); }
+    .entry-top { padding:16px 20px; display:flex; gap:14px; align-items:flex-start; }
+    .entry-time { font-size:.72rem; color:var(--muted); white-space:nowrap; margin-top:2px; flex-shrink:0; }
+    .entry-body { flex:1; min-width:0; }
+    .entry-title { font-size:1rem; font-weight:600; margin-bottom:5px; line-height:1.3; }
+    .entry-summary { font-size:.85rem; color:var(--muted); line-height:1.5; }
+    .entry-footer { display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap; }
+    .proj-badge { font-size:.7rem; padding:2px 9px; border-radius:20px; background:rgba(124,111,255,.2); color:#a99fff; font-weight:600; }
+    .tag-chip { font-size:.68rem; background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:2px 7px; color:var(--muted); }
+    .entry-actions { margin-left:auto; display:flex; gap:6px; }
+
+    .entry-details { border-top:1px solid var(--border); background:var(--surface2); padding:12px 20px 14px 54px; display:none; }
+    .entry-details.open { display:block; }
+    .entry-details h4 { font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:8px; }
+    .entry-details ul { list-style:none; display:flex; flex-direction:column; gap:5px; }
+    .entry-details ul li { font-size:.84rem; color:var(--text); padding-left:14px; position:relative; }
+    .entry-details ul li::before { content:'›'; position:absolute; left:0; color:var(--accent2); }
+    .expand-btn { background:none; border:none; cursor:pointer; color:var(--muted); font-size:.78rem; padding:2px 6px; border-radius:5px; transition:all .12s; }
+    .expand-btn:hover { background:var(--surface2); color:var(--text); }
+
+    /* Empty / Welcome state */
+    .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; padding:60px 20px; text-align:center; color:var(--muted); }
+    .empty-icon { font-size:4rem; margin-bottom:16px; }
+    .empty-state h3 { font-size:1.1rem; color:var(--text); margin-bottom:8px; }
+    .empty-state p { font-size:.87rem; line-height:1.6; max-width:380px; margin-bottom:20px; }
+
+    /* Search results */
+    .search-results { padding:20px 28px; }
+    .search-header { font-size:.85rem; color:var(--muted); margin-bottom:16px; }
+    .search-result-item { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 18px; margin-bottom:10px; cursor:pointer; transition:border-color .15s; }
+    .search-result-item:hover { border-color:var(--accent); }
+    .sri-date { font-size:.72rem; color:var(--accent2); font-weight:600; margin-bottom:4px; }
+    .sri-title { font-size:.95rem; font-weight:600; margin-bottom:4px; }
+    .sri-summary { font-size:.82rem; color:var(--muted); line-height:1.4; }
+
+    /* Modal */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); display:none; align-items:center; justify-content:center; z-index:200; padding:20px; }
+    .modal-overlay.open { display:flex; }
+    .modal { background:var(--surface); border:1px solid var(--border); border-radius:16px; width:100%; max-width:580px; padding:28px; box-shadow:0 24px 64px rgba(0,0,0,.5); max-height:90vh; overflow-y:auto; }
+    .modal-title { font-size:1.1rem; font-weight:700; margin-bottom:20px; }
+    .form-grid { display:flex; flex-direction:column; gap:14px; }
+    .form-field label { display:block; font-size:.75rem; color:var(--muted); margin-bottom:5px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+    .form-field input, .form-field select, .form-field textarea { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px 12px; color:var(--text); font-size:.87rem; outline:none; font-family:inherit; transition:border-color .12s; }
+    .form-field input:focus, .form-field select:focus, .form-field textarea:focus { border-color:var(--accent); }
+    .form-field textarea { min-height:90px; resize:vertical; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .form-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; padding-top:16px; border-top:1px solid var(--border); }
+
+    /* Toast */
+    .toast-container { position:fixed; bottom:24px; right:24px; display:flex; flex-direction:column; gap:8px; z-index:999; }
+    .toast { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:11px 16px; font-size:.84rem; display:flex; align-items:center; gap:9px; box-shadow:0 8px 24px rgba(0,0,0,.4); animation:slideIn .2s ease; }
+    .toast.success { border-left:3px solid var(--accent2); }
+    .toast.error   { border-left:3px solid var(--danger); }
+    @keyframes slideIn { from{transform:translateX(120%);opacity:0} to{transform:translateX(0);opacity:1} }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <span class="topbar-logo">🧠</span>
+  <div>
+    <div class="topbar-title">Daily Memory</div>
+    <div class="topbar-sub">Mike Control Center</div>
+  </div>
+  <div class="topbar-spacer"></div>
+  <button class="btn btn-secondary btn-sm" onclick="window.location='http://localhost:3000'">← Control Center</button>
+  <button class="btn btn-primary" style="margin-left:8px" onclick="openAddModal()">+ Log Entry</button>
+</header>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-search">
+      <input class="search-input" type="text" id="search-input" placeholder="🔍  Search all logs…" oninput="handleSearch()" />
+    </div>
+    <div class="sidebar-tabs">
+      <button class="tab-btn active" id="tab-days" onclick="switchTab('days')">Days</button>
+      <button class="tab-btn" id="tab-projects" onclick="switchTab('projects')">Projects</button>
+    </div>
+    <div class="day-list" id="day-list"></div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main" id="main-area">
+    <div class="empty-state" id="welcome-state">
+      <div class="empty-icon">🧠</div>
+      <h3>Daily Memory System</h3>
+      <p>Every conversation and work session is logged here. Select a day on the left to read back, or search across all logs.</p>
+      <button class="btn btn-primary" onclick="openAddModal()">+ Log your first entry</button>
+    </div>
+  </main>
+
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Add Entry Modal -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-title">🧠 Log New Entry</div>
+    <div class="form-grid">
+      <div class="form-row">
+        <div class="form-field">
+          <label>Date</label>
+          <input type="date" id="ef-date" />
+        </div>
+        <div class="form-field">
+          <label>Project</label>
+          <input type="text" id="ef-project" placeholder="control-center, garageos…" />
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Title *</label>
+        <input type="text" id="ef-title" placeholder="What was discussed or built?" />
+      </div>
+      <div class="form-field">
+        <label>Summary *</label>
+        <textarea id="ef-summary" placeholder="Describe what happened, what was decided, what was built…"></textarea>
+      </div>
+      <div class="form-field">
+        <label>Details (one per line)</label>
+        <textarea id="ef-details" placeholder="- Built the server&#10;- Fixed port conflict&#10;- Added to GitHub"></textarea>
+      </div>
+      <div class="form-field">
+        <label>Tags (comma separated)</label>
+        <input type="text" id="ef-tags" placeholder="architecture, github, bug-fix" />
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="closeAddModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEntry()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = `${window.location.origin}`;
+
+let state = {
+  days: [],
+  stats: {},
+  activeDate: null,
+  activeDayData: null,
+  tab: 'days',
+  searchQuery: '',
+  searchResults: null,
+};
+
+// ── Boot ──────────────────────────────────────────────────────────
+async function init() {
+  await Promise.all([loadDays(), loadStats()]);
+  // Auto-select today if exists
+  const today = new Date().toISOString().slice(0, 10);
+  const todayDay = state.days.find(d => d.date === today);
+  if (todayDay) selectDay(today);
+}
+
+// ── Data loading ──────────────────────────────────────────────────
+async function loadDays() {
+  const res = await fetch(`${API}/api/days`);
+  state.days = await res.json();
+  renderSidebar();
+}
+
+async function loadStats() {
+  const res = await fetch(`${API}/api/stats`);
+  state.stats = await res.json();
+}
+
+async function selectDay(date) {
+  state.activeDate = date;
+  state.searchResults = null;
+  document.getElementById('search-input').value = '';
+  state.searchQuery = '';
+
+  const res = await fetch(`${API}/api/days/${date}`);
+  state.activeDayData = await res.json();
+
+  renderSidebar();
+  renderDayView();
+}
+
+// ── Search ────────────────────────────────────────────────────────
+let searchTimeout;
+function handleSearch() {
+  const q = document.getElementById('search-input').value.trim();
+  state.searchQuery = q;
+  clearTimeout(searchTimeout);
+  if (!q) {
+    state.searchResults = null;
+    if (state.activeDate) renderDayView();
+    else renderWelcome();
+    return;
+  }
+  searchTimeout = setTimeout(() => doSearch(q), 300);
+}
+
+async function doSearch(q) {
+  const res = await fetch(`${API}/api/search?q=${encodeURIComponent(q)}`);
+  const data = await res.json();
+  state.searchResults = data;
+  renderSearchResults();
+}
+
+// ── Sidebar ───────────────────────────────────────────────────────
+function switchTab(tab) {
+  state.tab = tab;
+  document.getElementById('tab-days').classList.toggle('active', tab === 'days');
+  document.getElementById('tab-projects').classList.toggle('active', tab === 'projects');
+  renderSidebar();
+}
+
+function renderSidebar() {
+  const list = document.getElementById('day-list');
+
+  if (state.tab === 'projects') {
+    const pc = state.stats.projectCounts || {};
+    const projects = Object.entries(pc).sort((a,b) => b[1]-a[1]);
+    if (!projects.length) {
+      list.innerHTML = '<div class="sidebar-empty">No project logs yet</div>';
+      return;
+    }
+    list.innerHTML = projects.map(([p, count]) => `
+      <div class="day-item" onclick="searchProject('${p}')">
+        <div class="day-item-date">
+          📁 ${p}
+          <span class="day-item-count">${count}</span>
+        </div>
+      </div>
+    `).join('');
+    return;
+  }
+
+  if (!state.days.length) {
+    list.innerHTML = '<div class="sidebar-empty">No logs yet.<br>Start by adding an entry!</div>';
+    return;
+  }
+
+  list.innerHTML = state.days.map(d => {
+    const isActive = d.date === state.activeDate;
+    const label = formatDateLabel(d.date);
+    return `
+      <div class="day-item ${isActive ? 'active' : ''}" onclick="selectDay('${d.date}')">
+        <div class="day-item-date">
+          ${label}
+          <span class="day-item-count">${d.count}</span>
+        </div>
+        ${d.projects.length ? `<div class="day-item-projects">📁 ${d.projects.join(', ')}</div>` : ''}
+        ${d.preview ? `<div class="day-item-preview">${d.preview}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+// ── Day view ──────────────────────────────────────────────────────
+function renderWelcome() {
+  document.getElementById('main-area').innerHTML = `
+    <div class="empty-state">
+      <div class="empty-icon">🧠</div>
+      <h3>Daily Memory System</h3>
+      <p>Every conversation and work session is logged here. Select a day on the left to read back, or search across all logs.</p>
+      <button class="btn btn-primary" onclick="openAddModal()">+ Log your first entry</button>
+    </div>`;
+}
+
+function renderDayView() {
+  const day = state.activeDayData;
+  if (!day) { renderWelcome(); return; }
+
+  const label = formatDateLabel(day.date);
+  const main = document.getElementById('main-area');
+
+  main.innerHTML = `
+    <div class="day-view">
+      <div class="day-header">
+        <div>
+          <div class="day-title">📅 ${label}</div>
+          <div class="day-subtitle">${day.entries.length} log entr${day.entries.length === 1 ? 'y' : 'ies'}</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openAddModal('${day.date}')">+ Add Entry</button>
+      </div>
+      <div class="entries-list" id="entries-list">
+        ${day.entries.length ? day.entries.map(e => renderEntryCard(e, day.date)).join('') : `
+          <div class="empty-state" style="padding:40px 0">
+            <div class="empty-icon" style="font-size:2.5rem">📝</div>
+            <p>No entries for this day yet.</p>
+            <button class="btn btn-primary btn-sm" onclick="openAddModal('${day.date}')">+ Add Entry</button>
+          </div>`}
+      </div>
+    </div>`;
+}
+
+function renderEntryCard(e, date) {
+  const time = new Date(e.timestamp).toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
+  const details = (e.details || []).filter(Boolean);
+  return `
+    <div class="entry-card" id="card-${e.id}">
+      <div class="entry-top">
+        <div class="entry-time">${time}</div>
+        <div class="entry-body">
+          <div class="entry-title">${e.title}</div>
+          <div class="entry-summary">${e.summary}</div>
+          <div class="entry-footer">
+            ${e.project ? `<span class="proj-badge">📁 ${e.project}</span>` : ''}
+            ${(e.tags||[]).map(t => `<span class="tag-chip">${t}</span>`).join('')}
+            ${details.length ? `<button class="expand-btn" onclick="toggleDetails('${e.id}')">▸ ${details.length} details</button>` : ''}
+            <div class="entry-actions">
+              <button class="btn btn-danger btn-sm" onclick="deleteEntry('${date}','${e.id}')">🗑</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      ${details.length ? `
+      <div class="entry-details" id="details-${e.id}">
+        <h4>Details</h4>
+        <ul>${details.map(d => `<li>${d}</li>`).join('')}</ul>
+      </div>` : ''}
+    </div>`;
+}
+
+function toggleDetails(id) {
+  const el = document.getElementById(`details-${id}`);
+  if (el) el.classList.toggle('open');
+}
+
+// ── Search results ────────────────────────────────────────────────
+function renderSearchResults() {
+  const data = state.searchResults;
+  const main = document.getElementById('main-area');
+  if (!data) return;
+
+  main.innerHTML = `
+    <div class="search-results">
+      <div class="search-header">
+        ${data.count} result${data.count !== 1 ? 's' : ''} for "<strong>${data.query}</strong>"
+        <button class="btn btn-secondary btn-sm" style="margin-left:10px" onclick="clearSearch()">✕ Clear</button>
+      </div>
+      ${data.count === 0 ? '<p style="color:var(--muted)">Nothing found.</p>' :
+        data.results.map(r => `
+          <div class="search-result-item" onclick="selectDay('${r.date}')">
+            <div class="sri-date">📅 ${formatDateLabel(r.date)}</div>
+            <div class="sri-title">${r.title}</div>
+            <div class="sri-summary">${r.summary}</div>
+            ${r.project ? `<span class="proj-badge" style="display:inline-block;margin-top:6px">📁 ${r.project}</span>` : ''}
+          </div>`).join('')}
+    </div>`;
+}
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  state.searchQuery = '';
+  state.searchResults = null;
+  if (state.activeDate) renderDayView();
+  else renderWelcome();
+}
+
+function searchProject(project) {
+  document.getElementById('search-input').value = project;
+  doSearch(project);
+  switchTab('days');
+}
+
+// ── Add Modal ─────────────────────────────────────────────────────
+function openAddModal(date) {
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('ef-date').value    = date || today;
+  document.getElementById('ef-title').value   = '';
+  document.getElementById('ef-summary').value = '';
+  document.getElementById('ef-details').value = '';
+  document.getElementById('ef-tags').value    = '';
+  document.getElementById('ef-project').value = '';
+  document.getElementById('add-modal').classList.add('open');
+  setTimeout(() => document.getElementById('ef-title').focus(), 100);
+}
+
+function closeAddModal() {
+  document.getElementById('add-modal').classList.remove('open');
+}
+
+async function saveEntry() {
+  const title   = document.getElementById('ef-title').value.trim();
+  const summary = document.getElementById('ef-summary').value.trim();
+  if (!title || !summary) { toast('Title and summary are required', 'error'); return; }
+
+  const date    = document.getElementById('ef-date').value;
+  const project = document.getElementById('ef-project').value.trim();
+  const tags    = document.getElementById('ef-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const details = document.getElementById('ef-details').value.split('\n').map(d=>d.replace(/^[-•]\s*/,'')).filter(Boolean);
+
+  const res = await fetch(`${API}/api/log`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ date, title, summary, project, tags, details }),
+  });
+
+  if (!res.ok) { toast('Failed to save', 'error'); return; }
+  toast('Entry saved! 🧠');
+  closeAddModal();
+  await Promise.all([loadDays(), loadStats()]);
+  selectDay(date);
+}
+
+async function deleteEntry(date, id) {
+  if (!confirm('Delete this entry?')) return;
+  await fetch(`${API}/api/days/${date}/entries/${id}`, { method: 'DELETE' });
+  toast('Entry deleted');
+  await Promise.all([loadDays(), loadStats()]);
+  selectDay(date);
+}
+
+// ── Utils ─────────────────────────────────────────────────────────
+function formatDateLabel(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const today = new Date().toISOString().slice(0,10);
+  const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10);
+  if (dateStr === today) return `Today — ${d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}`;
+  if (dateStr === yesterday) return `Yesterday — ${d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}`;
+  return d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+
+function toast(msg, type='success') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${type==='success'?'✅':'❌'}</span> ${msg}`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(()=>el.remove(), 3500);
+}
+
+document.querySelector('.modal-overlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeAddModal();
+});
+
+// ── Boot ──────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
