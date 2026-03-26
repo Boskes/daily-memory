@@ -18,11 +18,11 @@ const __dirname  = path.dirname(__filename);
 
 const app      = express();
 const PORT     = 3004;
-const DATA_DIR = path.join(__dirname, 'data');
+const DATA_DIR = path.join(__dirname, '../data');
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '../frontend')));
 
 // ── Helpers ───────────────────────────────────────────────────────
 
